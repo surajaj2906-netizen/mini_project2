@@ -700,6 +700,7 @@ def forgot_password():
             try:
                 email_sent = send_otp_email(email, otp)
             except (OSError, smtplib.SMTPException):
+                app.logger.exception("SMTP error while sending password reset email")
                 db.session.rollback()
                 flash("We could not send a reset code. Please try again later.", "danger")
             else:
