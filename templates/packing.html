@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block title %}Packing list{% endblock %}
+{% block content %}
+<section class="container py-5">
+  <div class="page-intro"><div><p class="eyebrow text-primary">TRIP READY</p><h1>Packing checklist</h1><p>Keep essentials organized before you leave.</p></div></div>
+  <div class="row g-4 mt-1">
+    <div class="col-lg-4">
+      <form method="post" class="aside-card">
+        <h4>Add an item</h4>
+        <label>Item</label><input class="form-control" name="label" maxlength="180" required>
+        <label>Category</label><select class="form-select" name="category"><option>Essentials</option><option>Documents</option><option>Clothing</option><option>Health</option><option>Activities</option></select>
+        <label>Trip (optional)</label><select class="form-select" name="itinerary_id"><option value="">General list</option>{% for trip in itineraries %}<option value="{{ trip.id }}">{{ trip.destination_city }} · {{ trip.departure_date.strftime('%d %b') }}</option>{% endfor %}</select>
+        <button class="btn btn-primary w-100">Add to list</button>
+      </form>
+      <div class="aside-card mt-3"><h4>Smart checklist</h4><p class="small text-muted">Generate documents, clothing, health and activity essentials for a trip.</p>{% for trip in itineraries %}<form method="post" action="{{ url_for('generate_packing_items', itinerary_id=trip.id) }}" class="mb-2"><button class="btn btn-outline-primary w-100">Prepare for {{ trip.destination_city }}</button></form>{% endfor %}</div>
+    </div>
+    <div class="col-lg-8"><div class="list-card">{% if items %}{% for item in items %}<div class="packing-row {% if item.completed %}is-complete{% endif %}"><form method="post" action="{{ url_for('toggle_packing_item', item_id=item.id) }}"><button class="packing-toggle" aria-label="Toggle {{ item.label }}">{% if item.completed %}✓{% else %}○{% endif %}</button></form><div><strong>{{ item.label }}</strong><small>{{ item.category }}{% if item.itinerary %} · {{ item.itinerary.destination_city }}{% endif %}</small></div><form method="post" action="{{ url_for('delete_packing_item', item_id=item.id) }}" class="ms-auto"><button class="btn btn-sm btn-link text-danger">Remove</button></form></div>{% endfor %}{% else %}<div class="empty-state border-0"><p>Your checklist is empty. Add the first item.</p></div>{% endif %}</div></div>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block title %}Book an Indian train{% endblock %}
+{% block content %}
+<section class="container py-5">
+  <div class="page-intro">
+    <div>
+      <p class="eyebrow text-primary">INDIA RAIL TRAVEL</p>
+      <h1>Book a train.</h1>
+      <p>Plan your Indian rail journey from one simple place.</p>
+    </div>
+    <a class="btn btn-outline-primary" href="{{ url_for('bookings') }}">Back to bookings</a>
+  </div>
+  <div class="train-booking-panel">
+    <div>
+      <span class="badge text-bg-light">India only</span>
+      <h2>Train booking is ready for your rules.</h2>
+      <p class="text-muted">The booking form will be added here after you share the train search, passenger, payment, and confirmation requirements.</p>
+    </div>
+    <div class="train-route-preview" aria-hidden="true">
+      <span>From</span><strong>Station</strong><span class="train-route-line">&#8594;</span><span>To</span><strong>Station</strong>
+    </div>
+  </div>
+</section>
+{% endblock %}

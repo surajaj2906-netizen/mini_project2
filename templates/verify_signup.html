@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block title %}Verify your email{% endblock %}
+{% block content %}
+<section class="auth-page"><div class="auth-card">
+  <p class="eyebrow text-primary">ONE LAST STEP</p>
+  <h1>Verify your email</h1>
+  <p class="text-muted mb-4">Enter the six-digit code sent to <strong>{{ email }}</strong>. It expires in 10 minutes.</p>
+  <form method="post">
+    <label for="otp">Verification code</label>
+    <input id="otp" class="form-control text-center fs-4" name="otp" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required autofocus>
+    <button class="btn btn-primary w-100 mt-3">Verify and create account</button>
+  </form>
+  <form method="post" action="{{ url_for('resend_signup_otp') }}" class="mt-3 text-center">
+    <button class="btn btn-link">Resend code</button>
+  </form>
+  <p class="text-center mt-2 mb-0"><a href="{{ url_for('signup') }}">Use a different email</a></p>
+</div></section>
+{% endblock %}

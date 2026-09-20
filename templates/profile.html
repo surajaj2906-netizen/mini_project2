@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% block title %}Profile{% endblock %}
+{% block content %}
+<section class="container py-5">
+  <div class="page-intro">
+    <div>
+      <p class="eyebrow text-primary">YOUR ACCOUNT</p>
+      <h1>Your profile</h1>
+      <p>Manage your basic details and travel preferences.</p>
+    </div>
+  </div>
+
+  <div class="aside-card mb-4">
+    <div class="d-flex align-items-center gap-3 mb-4">
+      <div class="trip-mark">{{ current_user.name[0]|upper }}</div>
+      <div>
+        <h3 class="mb-1">{{ current_user.name }}</h3>
+        <p class="text-muted mb-0">{{ current_user.email }}</p>
+      </div>
+    </div>
+    <div class="row g-3">
+      <div class="col-md-4"><small class="text-muted d-block">Full name</small><strong>{{ current_user.name }}</strong></div>
+      <div class="col-md-4"><small class="text-muted d-block">Signup email</small><strong>{{ current_user.email }}</strong></div>
+      <div class="col-md-4"><small class="text-muted d-block">Phone number</small><strong>{{ current_user.phone_number or 'Not added yet' }}</strong></div>
+      <div class="col-md-4"><small class="text-muted d-block">Member since</small><strong>{{ current_user.created_at.strftime('%d %b %Y') }}</strong></div>
+    </div>
+  </div>
+
+  <form method="post" class="planner-card profile-card">
+    <h3>Edit basic details</h3>
+    <div class="row g-3">
+      <div class="col-md-6"><label>Username</label><input class="form-control" name="name" value="{{ current_user.name }}" required autocomplete="name"></div>
+      <div class="col-md-6"><label>Phone number</label><input class="form-control" type="tel" name="phone_number" value="{{ current_user.phone_number or '' }}" maxlength="30" autocomplete="tel"></div>
+    </div>
+    <button class="btn btn-primary mt-4">Save details</button>
+  </form>
+
+  <div class="aside-card mt-4">
+    <h3>Security</h3>
+    <p>Change your password without leaving your account.</p>
+    <a class="btn btn-outline-primary" href="{{ url_for('change_password') }}">Change password</a>
+    <hr>
+    <h3>Your data</h3>
+    <p>Download a copy of your Roamwise account data, or permanently delete your account.</p>
+    <a class="btn btn-outline-primary" href="{{ url_for('export_account_data') }}">Export my data</a>
+    <hr>
+    <form method="post" action="{{ url_for('delete_account') }}" class="row g-2" onsubmit="return confirm('This permanently deletes your account and data.')">
+      <div class="col-md-8"><input class="form-control" type="password" name="password" placeholder="Current password" required></div>
+      <div class="col-md-4"><button class="btn btn-outline-danger w-100">Delete account</button></div>
+    </form>
+  </div>
+</section>
+{% endblock %}

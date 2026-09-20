@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% block title %}Roamwise{% endblock %}
+{% block content %}
+<section class="home-hero">
+  <div class="container">
+    <div class="row align-items-end g-5">
+      <div class="col-lg-7">
+        <p class="eyebrow">TRAVEL WITH A PLAN</p>
+        <h1>Go somewhere<br><em>worth remembering.</em></h1>
+        <p class="home-hero-copy">Build a complete trip around your budget, your pace and the places you actually want to see.</p>
+        <div class="d-flex flex-wrap gap-2 mt-4">
+          <a class="btn btn-light btn-lg" href="{{ url_for('planner') if current_user.is_authenticated else url_for('signup') }}">Start planning</a>
+          <a class="btn btn-outline-light btn-lg" href="{{ url_for('destinations') }}">Browse destinations</a>
+        </div>
+        <div class="home-trust-row mt-5"><span><strong>12</strong> Indian cities</span><span><strong>3</strong> travel styles</span><span><strong>1</strong> clear budget</span></div>
+      </div>
+      <div class="col-lg-5">
+        {% set feature = destinations[0] if destinations else none %}
+        <div class="hero-destination-preview"{% if feature %} style="background-image:linear-gradient(180deg,rgba(7,31,43,.05),rgba(7,31,43,.9)),url('{{ feature.image_url }}')"{% endif %}>
+          <div class="hero-preview-top"><span class="preview-badge">EDITOR'S PICK</span><span class="preview-rating">★ {{ feature.popularity_score if feature else 96 }}</span></div>
+          <div class="hero-preview-bottom"><small>Start with</small><h3>{{ feature.city_name if feature else 'Goa' }}</h3><p>{{ feature.description if feature else 'A relaxed escape with beaches, food and bright evenings.' }}</p><a href="{{ url_for('destination_detail', destination_id=feature.id) if feature else url_for('destinations') }}">Explore the feeling <span aria-hidden="true">→</span></a></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="container home-planner-wrap">
+  <div class="quick-search-panel">
+    <div><p class="eyebrow text-primary mb-1">YOUR NEXT ESCAPE</p><h2 class="mb-0">Where will you go?</h2></div>
+    <div class="quick-search-fields"><a href="{{ url_for('planner') }}" class="quick-search-field"><span class="quick-search-icon">From</span><strong>Choose a starting city</strong></a><span class="quick-search-arrow" aria-hidden="true">→</span><a href="{{ url_for('planner') }}" class="quick-search-field"><span class="quick-search-icon">To</span><strong>Choose a destination</strong></a><a class="btn btn-primary" href="{{ url_for('planner') }}">Build my trip</a></div>
+  </div>
+</section>
+
+<section class="container py-5 home-section">
+  <div class="section-heading home-section-heading"><div><p class="eyebrow text-primary mb-1">FIND YOUR NEXT ESCAPE</p><h2>Places with a point of view.</h2></div><a href="{{ url_for('destinations') }}">See all places <span aria-hidden="true">→</span></a></div>
+  <div class="row g-4">{% for destination in destinations[:6] %}<div class="col-sm-6 col-lg-4"><a class="home-destination-card" href="{{ url_for('destination_detail', destination_id=destination.id) }}"><div class="home-destination-image"><img src="{{ destination.image_url }}" alt="{{ destination.city_name }}"><span>{{ destination.category }}</span></div><div class="home-destination-content"><div><h3>{{ destination.city_name }}</h3><p>{{ destination.state }}</p></div><strong>{{ destination.average_daily_cost|rupee }}<small>/day</small></strong></div></a></div>{% endfor %}</div>
+</section>
+
+<section class="home-process-band"><div class="container"><div class="row align-items-center g-4"><div class="col-lg-4"><p class="eyebrow mb-1">A BETTER WAY TO LEAVE</p><h2>From idea to itinerary in three moves.</h2></div><div class="col-lg-8"><div class="row g-3"><div class="col-md-4"><div class="process-step"><span>01</span><h4>Tell us your pace</h4><p>Dates, budget and the kind of trip you want.</p></div></div><div class="col-md-4"><div class="process-step"><span>02</span><h4>Compare the fit</h4><p>See transport, stays, activities and costs together.</p></div></div><div class="col-md-4"><div class="process-step"><span>03</span><h4>Take it with you</h4><p>Save, share, download and keep every detail close.</p></div></div></div></div></div></div></section>
+{% endblock %}

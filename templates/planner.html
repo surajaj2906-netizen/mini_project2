@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+{% block title %}Plan a trip{% endblock %}
+{% block content %}
+<section class="container py-5 planner-page">
+  <div class="text-center col-lg-8 mx-auto mb-4">
+    <p class="eyebrow text-primary">SMART ITINERARY BUILDER</p>
+    <h1>Let's plan something wonderful.</h1>
+    <p>Type your departure and destination cities, then compare transport, stays and experiences.</p>
+  </div>
+  <form method="post" class="planner-card">
+    <div class="form-section">
+      <h4>1. Where and when?</h4>
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label>Leaving from</label>
+          <input class="form-control city-search" type="search" name="source" required autocomplete="off" placeholder="Search any city worldwide" data-city-list="source-city-results">
+          <div class="city-results" id="source-city-results" role="listbox"></div>
+        </div>
+        <div class="col-md-6">
+          <label>Going to</label>
+          <input class="form-control city-search" type="search" name="destination" required autocomplete="off" placeholder="Search any city worldwide" data-city-list="destination-city-results">
+          <div class="city-results" id="destination-city-results" role="listbox"></div>
+        </div>
+        <div class="col-md-4"><label>Departure date</label><input class="form-control" type="date" min="{{ today }}" name="departure_date" required></div>
+        <div class="col-md-4"><label>Return date</label><input class="form-control" type="date" min="{{ today }}" name="return_date" required></div>
+        <div class="col-md-4"><label>Travelers</label><input class="form-control" type="number" name="travelers" value="1" min="1" max="10" required></div>
+      </div>
+    </div>
+    <div class="form-section">
+      <h4>2. What feels right?</h4>
+      <div class="row g-3">
+        <div class="col-md-4"><label>Total trip budget (INR)</label><input class="form-control" type="number" name="budget" min="1000" value="{{ preference.maximum_budget|int }}" required></div>
+        <div class="col-md-4"><label>Travel style</label><select class="form-select" name="travel_style">{% for style in ['Budget','Standard','Luxury'] %}<option {% if preference.travel_style == style %}selected{% endif %}>{{ style }}</option>{% endfor %}</select></div>
+        <div class="col-md-4"><label>Hotel preference</label><select class="form-select" name="hotel_preference">{% for style in ['Budget','Standard','Luxury'] %}<option {% if preference.hotel_preference == style %}selected{% endif %}>{{ style }}</option>{% endfor %}</select></div>
+      </div>
+      <label class="mt-4 mb-2">What interests you? Choose one or more.</label>
+      <div class="interest-grid">
+        {% set selected = preference.interests.split(',') %}
+        {% for interest in ['Nature','History','Food','Adventure','Shopping','Beaches','Mountains','Religious','Nightlife'] %}
+        <label class="check-tile"><input type="checkbox" name="interests" value="{{ interest }}" {% if interest in selected %}checked{% endif %}><span>{{ interest }}</span></label>
+        {% endfor %}
+      </div>
+    </div>
+    <button class="btn btn-primary btn-lg w-100">Compare my trip options</button>
+  </form>
+</section>
+<script>
+  document.querySelectorAll('.city-search').forEach((input) => {
+    const results = document.getElementById(input.dataset.cityList);
+    let timer;
+    input.addEventListener('input', () => {
+      clearTimeout(timer);
+      const query = input.value.trim();
+      results.innerHTML = '';
+      if (query.length < 2) return;
+      timer = setTimeout(async () => {
+        try {
+          const response = await fetch(`/api/cities?q=${encodeURIComponent(query)}`);
+          const data = await response.json();
+          results.innerHTML = data.results.map((city) => `
+            <button type="button" class="city-result" role="option" data-city="${city.name.replace(/"/g, '&quot;')}">
+              <strong>${city.name}</strong><span>${[city.admin1, city.country].filter(Boolean).join(', ')}</span>
+            </button>`).join('');
+          results.querySelectorAll('.city-result').forEach((button) => {
+            button.addEventListener('click', () => {
+              input.value = button.dataset.city;
+              results.innerHTML = '';
+            });
+          });
+        } catch (error) {
+          results.innerHTML = '<span class="city-result-empty">City search is temporarily unavailable.</span>';
+        }
+      }, 250);
+    });
+    document.addEventListener('click', (event) => {
+      if (!input.contains(event.target) && !results.contains(event.target)) results.innerHTML = '';
+    });
+  });
+</script>
+{% endblock %}
