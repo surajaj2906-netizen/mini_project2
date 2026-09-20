@@ -50,6 +50,7 @@ app.config["SMTP_PORT"] = int(os.environ.get("SMTP_PORT", "587"))
 app.config["SMTP_USERNAME"] = os.environ.get("SMTP_USERNAME")
 app.config["SMTP_PASSWORD"] = os.environ.get("SMTP_PASSWORD")
 app.config["SMTP_FROM"] = os.environ.get("SMTP_FROM")
+app.config["BREVO_API_KEY"] = os.environ.get("BREVO_API_KEY")
 app.config["SMTP_USE_TLS"] = os.environ.get("SMTP_USE_TLS", "true").lower() == "true"
 app.config["APP_ENV"] = os.environ.get("APP_ENV", "development").lower()
 app.config["SESSION_COOKIE_HTTPONLY"] = True
@@ -397,22 +398,48 @@ def calculate_refund(booking, as_of=None):
     return 0.0, "No refund"
 
 
-def send_transaction_email(recipient, subject, body):
-    """Send booking notifications through the configured SMTP provider."""
-    required = ("SMTP_HOST", "SMTP_USERNAME", "SMTP_PASSWORD", "SMTP_FROM")
-    if not all(app.config[key] for key in required):
+def send_brevo_email(recipient, subject, text_content):
+    """Send transactional email through Brevo's HTTPS API."""
+    api_key = app.config.get("BREVO_API_KEY")
+    sender_email = app.config.get("SMTP_FROM")
+    if not api_key or not sender_email:
+        app.logger.warning("Brevo email is not configured: BREVO_API_KEY or SMTP_FROM is missing.")
         return False
-    message = EmailMessage()
-    message["Subject"] = subject
-    message["From"] = app.config["SMTP_FROM"]
-    message["To"] = recipient
-    message.set_content(body)
-    with smtplib.SMTP(app.config["SMTP_HOST"], app.config["SMTP_PORT"], timeout=10) as client:
-        if app.config["SMTP_USE_TLS"]:
-            client.starttls()
-        client.login(app.config["SMTP_USERNAME"], app.config["SMTP_PASSWORD"])
-        client.send_message(message)
-    return True
+
+    payload = {
+        "sender": {"name": "Roamwise", "email": sender_email},
+        "to": [{"email": recipient}],
+        "subject": subject,
+        "textContent": text_content,
+    }
+    data = json.dumps(payload).encode("utf-8")
+    req = Request(
+        "https://api.brevo.com/v3/smtp/email",
+        data=data,
+        headers={
+            "accept": "application/json",
+            "api-key": api_key,
+            "content-type": "application/json",
+        },
+        method="POST",
+    )
+    try:
+        with urlopen(req, timeout=15) as response:
+            if 200 <= response.status < 300:
+                return True
+            app.logger.error("Brevo email request returned HTTP %s", response.status)
+            return False
+    except HTTPError as exc:
+        error_body = exc.read().decode("utf-8", errors="replace")
+        app.logger.error("Brevo email request failed: HTTP %s - %s", exc.code, error_body[:1000])
+    except (URLError, TimeoutError, OSError) as exc:
+        app.logger.error("Brevo email request failed: %s", exc)
+    return False
+
+
+def send_transaction_email(recipient, subject, body):
+    """Send booking notifications through Brevo."""
+    return send_brevo_email(recipient, subject, body)
 
 
 def create_departure_reminders(user_id):
@@ -466,29 +493,18 @@ def generate_otp():
 
 
 def send_otp_email(recipient, otp):
-    """Send an OTP through SMTP, or save it to a local debug file in demo mode."""
-
-    required = ("SMTP_HOST", "SMTP_USERNAME", "SMTP_PASSWORD", "SMTP_FROM")
-    if not all(app.config[key] for key in required):
+    """Send an OTP through Brevo's HTTPS API, or save it locally when not configured."""
+    if not app.config.get("BREVO_API_KEY") or not app.config.get("SMTP_FROM"):
         debug_path = os.path.join(app.instance_path, "otp_debug.log")
         with open(debug_path, "a", encoding="utf-8") as handle:
             handle.write(f"[{datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}] {recipient} | otp={otp}\n")
         return False
 
-    message = EmailMessage()
-    message["Subject"] = "Your Roamwise verification code"
-    message["From"] = app.config["SMTP_FROM"]
-    message["To"] = recipient
-    message.set_content(
+    text_content = (
         f"Your Roamwise verification code is {otp}. It expires in "
         f"{app.config['OTP_TTL_SECONDS'] // 60} minutes. Do not share this code."
     )
-    with smtplib.SMTP(app.config["SMTP_HOST"], app.config["SMTP_PORT"], timeout=10) as client:
-        if app.config["SMTP_USE_TLS"]:
-            client.starttls()
-        client.login(app.config["SMTP_USERNAME"], app.config["SMTP_PASSWORD"])
-        client.send_message(message)
-    return True
+    return send_brevo_email(recipient, "Your Roamwise verification code", text_content)
 
 
 def trip_options(source, destination, depart, returning, travelers, budget, style, interests, hotel_pref):
@@ -700,7 +716,6 @@ def forgot_password():
             try:
                 email_sent = send_otp_email(email, otp)
             except (OSError, smtplib.SMTPException):
-                app.logger.exception("SMTP error while sending password reset email")
                 db.session.rollback()
                 flash("We could not send a reset code. Please try again later.", "danger")
             else:
