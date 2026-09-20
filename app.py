@@ -38,7 +38,7 @@ load_env_file()
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "change-this-secret-before-production")
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("MYSQL_DATABASE_URL", "sqlite:///travel.db")
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL", "sqlite:///travel.db")
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 if app.config["SQLALCHEMY_DATABASE_URI"].startswith("sqlite"):
     app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {"connect_args": {"timeout": 30}}
@@ -1521,6 +1521,17 @@ def seed_database():
                 db.session.add(TransportOption(source_city=origin, destination_city=destination, transport_type=mode, provider_name=provider,
                                                 departure_time=depart, arrival_time=arrive, duration_hours=duration, price_per_person=price, class_type=class_type, rating=rating))
     db.session.commit()
+
+
+def initialize_database():
+    with app.app_context():
+        db.create_all()
+        upgrade_existing_schema()
+        seed_database()
+
+
+# Initialize the schema and seed data for both local runs and production servers.
+initialize_database()
 
 
 if __name__ == "__main__":
